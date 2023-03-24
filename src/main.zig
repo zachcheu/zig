@@ -486,6 +486,7 @@ const usage_build_generic =
     \\  -fno-compiler-rt               Prevent including compiler-rt symbols in output
     \\  -rdynamic                      Add all symbols to the dynamic symbol table
     \\  -rpath [path]                  Add directory to the runtime library search path
+    \\  -wrap [symbol]                 Override the symbol with the wrapped symbol definition
     \\  -feach-lib-rpath               Ensure adding rpath for each used dynamic library
     \\  -fno-each-lib-rpath            Prevent adding rpath for each used dynamic library
     \\  -fallow-shlib-undefined        Allows undefined symbols in shared libraries
@@ -849,6 +850,9 @@ fn buildOutputType(
 
     var rpath_list = std.ArrayList([]const u8).init(gpa);
     defer rpath_list.deinit();
+
+    var wrap_list = std.ArrayList([]const u8).init(gpa);
+    defer wrap_list.deinit();
 
     var c_source_files = std.ArrayList(Compilation.CSourceFile).init(gpa);
     defer c_source_files.deinit();
@@ -2263,6 +2267,14 @@ fn buildOutputType(
                             next_arg,
                         });
                     };
+                } else if (mem.eql(u8, arg, "-wrap") or
+                    mem.eql(u8, arg, "--wrap"))
+                {
+                    i += 1;
+                    if (i >= linker_args.items.len) {
+                        fatal("expected linker arg after '{s}'", .{arg});
+                    }
+                    try wrap_list.append(linker_args.items[i]);
                 } else if (mem.startsWith(u8, arg, "/subsystem:")) {
                     var split_it = mem.splitBackwards(u8, arg, ":");
                     subsystem = try parseSubSystem(split_it.first());
@@ -3147,6 +3159,7 @@ fn buildOutputType(
         .clang_argv = clang_argv.items,
         .lib_dirs = lib_dirs.items,
         .rpath_list = rpath_list.items,
+        .wrap_list = wrap_list.items,
         .c_source_files = c_source_files.items,
         .link_objects = link_objects.items,
         .framework_dirs = framework_dirs.items,

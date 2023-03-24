@@ -3592,6 +3592,7 @@ pub fn linkWithZld(macho_file: *MachO, comp: *Compilation, prog_node: *std.Progr
         man.hash.addListOfBytes(options.framework_dirs);
         link.hashAddSystemLibs(&man.hash, options.frameworks);
         man.hash.addListOfBytes(options.rpath_list);
+        man.hash.addListOfBytes(options.wrap_list);
         if (is_dyn_lib) {
             man.hash.addOptionalBytes(options.install_name);
             man.hash.addOptional(options.version);
@@ -3862,6 +3863,11 @@ pub fn linkWithZld(macho_file: *MachO, comp: *Compilation, prog_node: *std.Progr
             for (options.rpath_list) |rpath| {
                 try argv.append("-rpath");
                 try argv.append(rpath);
+            }
+
+            for (options.wrap_list) |wrap| {
+                try argv.append("-wrap");
+                try argv.append(wrap);
             }
 
             if (options.pagezero_size) |pagezero_size| {
